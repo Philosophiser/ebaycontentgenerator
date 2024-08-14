@@ -4,16 +4,11 @@ import plotly.express as px
 from ebay_scraper import main as scrape_ebay
 
 def clean_price(price_str):
-    # Remove currency symbols and commas
     price_str = price_str.replace('$', '').replace(',', '')
-    
-    # Check if it's a price range
     if ' to ' in price_str:
-        # If it's a range, take the average
         low, high = map(float, price_str.split(' to '))
         return (low + high) / 2
     else:
-        # If it's a single price, convert to float
         return float(price_str)
 
 def create_histogram(df, column):
@@ -47,9 +42,21 @@ if st.button('Scrape eBay'):
                 
                 try:
                     df = pd.DataFrame(items)
-                    columns_order = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'item_number', 'link']
+                    columns_order = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'item_number', 'link', 'image_url']
                     df = df[columns_order]
-                    st.write(df)
+                    
+                    # Display items with clickable links and images
+                    for index, row in df.iterrows():
+                        col1, col2 = st.columns([1, 3])
+                        with col1:
+                            st.image(row['image_url'], use_column_width=True)
+                        with col2:
+                            st.write(f"**{row['title']}**")
+                            st.write(f"Price: {row['price']}")
+                            st.write(f"Condition: {row['condition']}")
+                            st.write(f"Shipping: {row['shipping']}")
+                            st.write(f"[View on eBay]({row['link']})")
+                        st.write("---")
 
                     # Clean and convert price data
                     df['price_numeric'] = df['price'].apply(clean_price)
