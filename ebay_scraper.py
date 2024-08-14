@@ -5,36 +5,29 @@ from datetime import datetime
 import time
 import random
 import io
+import re  # Add this import
 
 def scrape_ebay(search_term, max_retries=3, delay=5):
     url = f"https://www.ebay.com/sch/i.html?_nkw={search_term.replace(' ', '+')}"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": "https://www.ebay.com/",
-        "DNT": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
     for attempt in range(max_retries):
         try:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
-            
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                items = parse_ebay_page(soup)
-                return items
-            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            return parse_ebay_page(soup)
         except requests.RequestException as e:
             print(f"Attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
                 wait_time = delay * (attempt + 1) + random.uniform(1, 5)
                 print(f"Waiting for {wait_time:.2f} seconds before retrying...")
                 time.sleep(wait_time)
-            else:
-                print("Max retries reached. Unable to scrape data.")
-                return []
+    
+    print("Max retries reached. Unable to scrape data.")
+    return []
 
 def parse_ebay_page(soup):
     items = []
@@ -82,18 +75,18 @@ def parse_ebay_page(soup):
         
         # Link to the item
         link_elem = listing.select_one('.s-item__link')
-        item['link'] = link_elem['href'] if link_elem else 'N/A'
+        item['link'] = link_elem['href'] if link_elem and 'href' in link_elem.attrs else 'N/A'
 
         # Listing post date
         date_elem = listing.select_one('.s-item__listingDate')
         item['post_date'] = date_elem.text.strip() if date_elem else 'N/A'
 
         # eBay item number
+        item['item_number'] = 'N/A'
         if item['link'] != 'N/A':
             item_number_match = re.search(r'/itm/(\d+)', item['link'])
-            item['item_number'] = item_number_match.group(1) if item_number_match else 'N/A'
-        else:
-            item['item_number'] = 'N/A'
+            if item_number_match:
+                item['item_number'] = item_number_match.group(1)
 
         if item['title'] != "Shop on eBay":
             items.append(item)
@@ -118,7 +111,6 @@ def main(search_term):
     return csv_data, items
 
 if __name__ == "__main__":
-    # This block will only run if the script is executed directly (not imported)
     search_term = input("Enter your search term: ")
     csv_data, items = main(search_term)
     if csv_data:
@@ -129,6 +121,3 @@ if __name__ == "__main__":
         print(f"Data successfully saved to {filename}")
     else:
         print("No items were scraped. Please check the search term and try again.")
-
-    # Add a delay to keep the console open in Replit
-    time.sleep(10)
