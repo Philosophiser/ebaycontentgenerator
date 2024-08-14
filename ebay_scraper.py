@@ -84,6 +84,17 @@ def parse_ebay_page(soup):
         link_elem = listing.select_one('.s-item__link')
         item['link'] = link_elem['href'] if link_elem else 'N/A'
 
+        # Listing post date
+        date_elem = listing.select_one('.s-item__listingDate')
+        item['post_date'] = date_elem.text.strip() if date_elem else 'N/A'
+
+        # eBay item number
+        if item['link'] != 'N/A':
+            item_number_match = re.search(r'/itm/(\d+)', item['link'])
+            item['item_number'] = item_number_match.group(1) if item_number_match else 'N/A'
+        else:
+            item['item_number'] = 'N/A'
+
         if item['title'] != "Shop on eBay":
             items.append(item)
     
@@ -95,7 +106,7 @@ def save_to_csv(items):
         return None
     
     output = io.StringIO()
-    fieldnames = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'time_left', 'link']
+    fieldnames = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'time_left', 'post_date', 'item_number', 'link']
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(items)
