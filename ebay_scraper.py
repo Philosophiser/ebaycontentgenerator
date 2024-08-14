@@ -83,6 +83,10 @@ def parse_ebay_page(soup):
         link_elem = listing.select_one('.s-item__link')
         item['link'] = link_elem['href'] if link_elem and 'href' in link_elem.attrs else 'N/A'
 
+        # Extract image URL
+        img_elem = listing.select_one('.s-item__image-img')
+        item['image_url'] = img_elem['src'] if img_elem and 'src' in img_elem.attrs else 'N/A'
+
         item['item_number'] = 'N/A'
         if item['link'] != 'N/A':
             item_number_match = re.search(r'/itm/(\d+)', item['link'])
@@ -112,7 +116,7 @@ def save_to_csv(items):
         return None
     
     output = io.StringIO()
-    fieldnames = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'item_number', 'link']
+    fieldnames = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'item_number', 'link', 'image_url']
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(items)
