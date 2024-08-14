@@ -103,11 +103,8 @@ def save_to_csv(items):
 
 def main(search_term):
     items = scrape_ebay(search_term)
-    if items:
-        csv_data = save_to_csv(items)
-        return csv_data, items
-    else:
-        return None, []
+    csv_data = save_to_csv(items) if items else None
+    return csv_data, items
 
 if __name__ == "__main__":
     # This block will only run if the script is executed directly (not imported)
