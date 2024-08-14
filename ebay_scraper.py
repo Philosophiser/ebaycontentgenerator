@@ -5,37 +5,59 @@ from datetime import datetime
 import time
 import random
 import io
-import re  # Add this import
+import re
 
-def scrape_ebay(search_term, max_retries=3, delay=5):
+# List of user agents to rotate
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+]
+
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
+
+def scrape_ebay(search_term, max_retries=5, delay=10):
     url = f"https://www.ebay.com/sch/i.html?_nkw={search_term.replace(' ', '+')}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
     
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            headers = {
+                "User-Agent": get_random_user_agent(),
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Referer": "https://www.ebay.com/",
+            }
+            
+            response = requests.get(url, headers=headers, timeout=15)
             response.raise_for_status()
+            
             soup = BeautifulSoup(response.content, 'html.parser')
-            return parse_ebay_page(soup)
+            items = parse_ebay_page(soup)
+            
+            if items:
+                return items
+            else:
+                print(f"Attempt {attempt + 1}: No items found. Retrying...")
+        
         except requests.RequestException as e:
             print(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                wait_time = delay * (attempt + 1) + random.uniform(1, 5)
-                print(f"Waiting for {wait_time:.2f} seconds before retrying...")
-                time.sleep(wait_time)
+        
+        if attempt < max_retries - 1:
+            wait_time = delay * (attempt + 1) + random.uniform(1, 5)
+            print(f"Waiting for {wait_time:.2f} seconds before retrying...")
+            time.sleep(wait_time)
     
     print("Max retries reached. Unable to scrape data.")
     return []
 
 def parse_ebay_page(soup):
     items = []
-    listings = soup.select('li.s-item')
+    listings = soup.select('.s-item__wrapper')
     
     if not listings:
         print("No listings found. The page structure might have changed.")
-        print("Page content:", soup.prettify()[:1000])
         return items
 
     for listing in listings:
@@ -88,7 +110,7 @@ def parse_ebay_page(soup):
             if item_number_match:
                 item['item_number'] = item_number_match.group(1)
 
-        if item['title'] != "Shop on eBay":
+        if item['title'] != "Shop on eBay" and item['title'] != 'N/A':
             items.append(item)
     
     print(f"Scraped {len(items)} items")
