@@ -8,24 +8,34 @@ search_term = st.text_input('Enter your search term:')
 
 if st.button('Scrape eBay'):
     if search_term:
-        st.write(f"Scraping eBay for '{search_term}'...")
-        csv_data, items = scrape_ebay(search_term)
+        with st.spinner(f"Scraping eBay for '{search_term}'..."):
+            csv_data, items = scrape_ebay(search_term)
         
-        if csv_data:
+        if items:
             st.success(f"Successfully scraped {len(items)} items!")
             
             # Display the data as a table
-            df = pd.read_csv(pd.compat.StringIO(csv_data))
-            st.write(df)
+            try:
+                df = pd.DataFrame(items)
+                st.write(df)
+            except Exception as e:
+                st.error(f"Error creating DataFrame: {e}")
+                st.write("Raw data:", items)
             
             # Provide a download button for the CSV
-            st.download_button(
-                label="Download data as CSV",
-                data=csv_data,
-                file_name=f"ebay_results_{search_term}.csv",
-                mime="text/csv"
-            )
+            if csv_data:
+                st.download_button(
+                    label="Download data as CSV",
+                    data=csv_data,
+                    file_name=f"ebay_results_{search_term}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("CSV data is not available.")
         else:
-            st.error("No items were scraped. Please check your search term and try again.")
+            st.warning("No items were scraped. The search may have returned no results.")
     else:
-        st.warning("Please enter a search term.") 
+        st.warning("Please enter a search term.")
+
+# Add some basic error handling
+st.error("If you encounter any issues, please check your internet connection and try again.")
