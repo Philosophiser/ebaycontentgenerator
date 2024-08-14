@@ -22,12 +22,12 @@ if st.button('Scrape eBay'):
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            for i in range(100):
-                status_text.text(f"Scraping in progress... {i+1}%")
-                progress_bar.progress(i + 1)
-                if i == 0:
-                    csv_data, items = scrape_ebay(search_term, int(num_pages))
-                    break
+            def update_progress(current_page, total_pages):
+                progress = int((current_page / total_pages) * 100)
+                status_text.text(f"Scraping page {current_page} of {total_pages}...")
+                progress_bar.progress(progress)
+            
+            csv_data, items = scrape_ebay(search_term, int(num_pages), update_progress)
             
             if items:
                 st.success(f"Successfully scraped {len(items)} items from {num_pages} page(s)!")
