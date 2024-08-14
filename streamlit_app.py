@@ -17,6 +17,9 @@ if st.button('Scrape eBay'):
             # Display the data as a table
             try:
                 df = pd.DataFrame(items)
+                # Reorder columns for better presentation
+                columns_order = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'time_left', 'post_date', 'item_number', 'link']
+                df = df[columns_order]
                 st.write(df)
             except Exception as e:
                 st.error(f"Error creating DataFrame: {e}")
