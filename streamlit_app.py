@@ -3,6 +3,19 @@ import pandas as pd
 import plotly.express as px
 from ebay_scraper import main as scrape_ebay
 
+def clean_price(price_str):
+    # Remove currency symbols and commas
+    price_str = price_str.replace('$', '').replace(',', '')
+    
+    # Check if it's a price range
+    if ' to ' in price_str:
+        # If it's a range, take the average
+        low, high = map(float, price_str.split(' to '))
+        return (low + high) / 2
+    else:
+        # If it's a single price, convert to float
+        return float(price_str)
+
 def create_histogram(df, column):
     fig = px.histogram(df, x=column, title=f'Histogram of {column}')
     return fig
@@ -38,19 +51,25 @@ if st.button('Scrape eBay'):
                     df = df[columns_order]
                     st.write(df)
 
-                    df['price_numeric'] = df['price'].str.replace('$', '').str.replace(',', '').astype(float)
+                    # Clean and convert price data
+                    df['price_numeric'] = df['price'].apply(clean_price)
 
-                    st.subheader("Price Distribution Histogram")
-                    hist_fig = create_histogram(df, 'price_numeric')
-                    st.plotly_chart(hist_fig)
+                    # Create visualizations
+                    try:
+                        st.subheader("Price Distribution Histogram")
+                        hist_fig = create_histogram(df, 'price_numeric')
+                        st.plotly_chart(hist_fig)
 
-                    st.subheader("Price Distribution Box Plot")
-                    box_fig = create_box_plot(df, 'price_numeric')
-                    st.plotly_chart(box_fig)
+                        st.subheader("Price Distribution Box Plot")
+                        box_fig = create_box_plot(df, 'price_numeric')
+                        st.plotly_chart(box_fig)
+                    except Exception as viz_error:
+                        st.warning(f"Error creating visualizations: {viz_error}")
+                        st.write("Visualization skipped. You can still download the CSV data.")
 
                 except Exception as e:
                     st.error(f"Error processing data: {e}")
-                    st.write("Raw data:", items)
+                    st.write("Raw data:", items[:5])  # Show only first 5 items to avoid clutter
                 
                 if csv_data:
                     st.download_button(
