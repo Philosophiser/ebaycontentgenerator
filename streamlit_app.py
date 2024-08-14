@@ -1,6 +1,17 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from ebay_scraper import main as scrape_ebay
+
+# Function to create a histogram
+def create_histogram(df, column):
+    fig = px.histogram(df, x=column, title=f'Histogram of {column}')
+    return fig
+
+# Function to create a box plot
+def create_box_plot(df, column):
+    fig = px.box(df, y=column, title=f'Box Plot of {column}')
+    return fig
 
 st.title('eBay Scraper App')
 
@@ -29,8 +40,22 @@ if st.button('Scrape eBay'):
                     columns_order = ['title', 'price', 'condition', 'shipping', 'location', 'seller_rating', 'bids', 'time_left', 'post_date', 'item_number', 'link']
                     df = df[columns_order]
                     st.write(df)
+
+                    # Clean and convert price data
+                    df['price_numeric'] = df['price'].str.replace('$', '').str.replace(',', '').astype(float)
+
+                    # Create and display histogram
+                    st.subheader("Price Distribution Histogram")
+                    hist_fig = create_histogram(df, 'price_numeric')
+                    st.plotly_chart(hist_fig)
+
+                    # Create and display box plot
+                    st.subheader("Price Distribution Box Plot")
+                    box_fig = create_box_plot(df, 'price_numeric')
+                    st.plotly_chart(box_fig)
+
                 except Exception as e:
-                    st.error(f"Error creating DataFrame: {e}")
+                    st.error(f"Error processing data: {e}")
                     st.write("Raw data:", items)
                 
                 # Provide a download button for the CSV
@@ -50,8 +75,3 @@ if st.button('Scrape eBay'):
     else:
         st.warning("Please enter a search term.")
 
-st.info("If you encounter any issues, please try the following:")
-st.info("1. Check your internet connection")
-st.info("2. Try a different search term")
-st.info("3. Wait a few minutes and try again")
-st.info("If problems persist, the eBay website structure may have changed, requiring an update to the scraper.")
