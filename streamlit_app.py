@@ -9,8 +9,15 @@ search_term = st.text_input('Enter your search term:')
 if st.button('Scrape eBay'):
     if search_term:
         try:
-            with st.spinner(f"Scraping eBay for '{search_term}'..."):
-                csv_data, items = scrape_ebay(search_term)
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for i in range(100):
+                status_text.text(f"Scraping in progress... {i+1}%")
+                progress_bar.progress(i + 1)
+                if i == 0:
+                    csv_data, items = scrape_ebay(search_term)
+                    break
             
             if items:
                 st.success(f"Successfully scraped {len(items)} items!")
@@ -37,10 +44,14 @@ if st.button('Scrape eBay'):
                 else:
                     st.warning("CSV data is not available.")
             else:
-                st.warning("No items were scraped. The search may have returned no results.")
+                st.warning("No items were scraped. The search may have returned no results or eBay might be blocking our requests.")
         except Exception as e:
             st.error(f"An error occurred while scraping: {str(e)}")
     else:
         st.warning("Please enter a search term.")
 
-st.info("If you encounter any issues, please check your internet connection and try again. If the problem persists, the eBay website structure may have changed, requiring an update to the scraper.")
+st.info("If you encounter any issues, please try the following:")
+st.info("1. Check your internet connection")
+st.info("2. Try a different search term")
+st.info("3. Wait a few minutes and try again")
+st.info("If problems persist, the eBay website structure may have changed, requiring an update to the scraper.")
