@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ebay_scraper import main as scrape_ebay
+import re
 
 def clean_price(price_str):
     price_str = price_str.replace('$', '').replace(',', '')
@@ -18,6 +19,9 @@ def create_histogram(df, column):
 def create_box_plot(df, column):
     fig = px.box(df, y=column, title=f'Box Plot of {column}')
     return fig
+
+def is_valid_image_url(url):
+    return url.startswith('http') and (url.endswith('.jpg') or url.endswith('.png') or url.endswith('.gif'))
 
 st.title('eBay Scraper App')
 
@@ -49,7 +53,10 @@ if st.button('Scrape eBay'):
                     for index, row in df.iterrows():
                         col1, col2 = st.columns([1, 3])
                         with col1:
-                            st.image(row['image_url'], use_column_width=True)
+                            if is_valid_image_url(row['image_url']):
+                                st.image(row['image_url'], use_column_width=True)
+                            else:
+                                st.write("No image available")
                         with col2:
                             st.write(f"**{row['title']}**")
                             st.write(f"Price: {row['price']}")
